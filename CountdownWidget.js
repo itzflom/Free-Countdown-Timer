@@ -199,9 +199,20 @@ function eventColors(event) {
 // ----------------------------------------------------------------------------
 // Widget rendering
 // ----------------------------------------------------------------------------
+// Next :00 / :15 / :30 / :45 boundary after the given time.
+function nextQuarterHour(now) {
+  const d = new Date(now)
+  d.setSeconds(0, 0)
+  const next = Math.floor(d.getMinutes() / 15) * 15 + 15
+  d.setMinutes(next)
+  return d
+}
+
 function buildWidget(event, family) {
   const w = new ListWidget()
-  w.refreshAfterDate = new Date(Date.now() + 60 * 1000)
+  // Ask iOS to refresh on the next quarter-hour mark (:00/:15/:30/:45) so the
+  // shown minutes line up with how often the system actually redraws widgets.
+  w.refreshAfterDate = nextQuarterHour(new Date())
 
   if (!event) {
     w.backgroundColor = new Color("#1c1c1e")
@@ -213,7 +224,16 @@ function buildWidget(event, family) {
 
   const colors = eventColors(event)
   const bd = fullBreakdown(event.targetDate, new Date())
-  const lines = formatLines(event, bd)
+  // On the widget: never show seconds (it can't tick), and snap minutes down to
+  // the nearest 15 so the number always looks current between refreshes.
+  const widgetBd = Object.assign({}, bd, {
+    seconds: 0,
+    minutes: Math.floor(bd.minutes / 15) * 15
+  })
+  const widgetEvent = Object.assign({}, event, {
+    units: Object.assign({}, event.units, { seconds: false })
+  })
+  const lines = formatLines(widgetEvent, widgetBd)
 
   const sz = SIZING[family] || SIZING.small
 

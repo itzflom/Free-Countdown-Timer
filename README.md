@@ -80,6 +80,8 @@ Add more widgets the same way (different Parameter each) for multiple events.
 
 ## Notes
 - Everything is saved on-device in Scriptable; no account, no internet needed.
-- Animated backgrounds and the live **seconds** appear in the app view; the widget
-  is a still image refreshed on iOS's schedule (day count always accurate).
+- Animated backgrounds and the live **seconds** appear only in the app view.
+- The **widget never shows seconds** and snaps its minutes to the nearest **15**
+  (:00/:15/:30/:45), and asks iOS to refresh on those marks — so the number always
+  looks current. The day/hour count is always accurate.
 - To edit later, just open the **CountdownWidget** script again.
