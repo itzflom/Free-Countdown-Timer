@@ -337,7 +337,7 @@ function drawPiece(ctx, text, pos, size, hex, bold, scale) {
 async function runApp() {
   const events = loadEvents()
   const payload = JSON.stringify({ events, themes: THEMES })
-  const html = APP_HTML.replace("/*__INIT__*/", `window.__BOOT__ = ${payload};`)
+  const html = appHtml().replace("/*__INIT__*/", `window.__BOOT__ = ${payload};`)
 
   const wv = new WebView()
   await wv.loadHTML(html)
@@ -355,8 +355,9 @@ async function runApp() {
 
 // ----------------------------------------------------------------------------
 // The web app (HTML + CSS + JS). Animated, live, drag-to-customize.
+// A hoisted function, so it's callable regardless of position in the file.
 // ----------------------------------------------------------------------------
-const APP_HTML = String.raw`<!DOCTYPE html>
+function appHtml() { return String.raw`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -629,11 +630,10 @@ function persist(){ window.__STATE__=state; }
 renderList();
 </script>
 </body>
-</html>`
+</html>` }
 
 // ----------------------------------------------------------------------------
-// Entry point (kept at the very bottom so every const above is initialized
-// before it runs — Scriptable executes the file top to bottom).
+// Entry point
 // ----------------------------------------------------------------------------
 if (config.runsInWidget) {
   Script.setWidget(buildWidget(findEvent(args.widgetParameter), config.widgetFamily || "small"))
