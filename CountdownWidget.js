@@ -215,9 +215,10 @@ function buildWidget(event, family) {
   const bd = fullBreakdown(event.targetDate, new Date())
   const lines = formatLines(event, bd)
 
+  const sz = SIZING[family] || SIZING.small
+
   if (event.layoutMode === "custom") {
-    const size = family === "medium" ? new Size(360, 170) : new Size(170, 170)
-    w.backgroundImage = renderCustomImage(event, lines, colors, size)
+    w.backgroundImage = renderCustomImage(event, lines, colors, sz.canvas)
     return w
   }
 
@@ -228,38 +229,47 @@ function buildWidget(event, family) {
   grad.startPoint = new Point(0, 0)
   grad.endPoint = new Point(1, 1)
   w.backgroundGradient = grad
-  w.setPadding(16, 16, 16, 16)
+  w.setPadding(sz.pad, sz.pad, sz.pad, sz.pad)
 
   const accent = new Color(event.accent || "#ffffff")
 
   const title = w.addText(event.title.toUpperCase())
-  title.font = Font.boldSystemFont(11)
+  title.font = Font.boldSystemFont(sz.title)
   title.textColor = new Color(colors[1] === "#000000" ? "#a0a0a5" : "#ffffff", 0.75)
   title.lineLimit = 2
 
   w.addSpacer()
 
   const big = w.addText(lines.primary)
-  big.font = Font.boldSystemFont(34)
+  big.font = Font.boldSystemFont(sz.big)
   big.textColor = accent
   big.minimumScaleFactor = 0.5
 
   if (lines.sub) {
-    w.addSpacer(2)
+    w.addSpacer(family === "large" ? 4 : 2)
     const sub = w.addText(lines.sub)
-    sub.font = Font.mediumSystemFont(13)
+    sub.font = Font.mediumSystemFont(sz.sub)
     sub.textColor = new Color(event.accent || "#ffffff", 0.85)
   }
 
-  if (family === "medium") {
-    w.addSpacer(6)
+  if (family === "medium" || family === "large") {
+    w.addSpacer(family === "large" ? 10 : 6)
     const d = new Date(event.targetDate)
     const meta = w.addText(`${d.toLocaleDateString()}  ·  ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`)
-    meta.font = Font.systemFont(10)
+    meta.font = Font.systemFont(sz.meta)
     meta.textColor = new Color(event.accent || "#ffffff", 0.6)
   }
 
+  if (family === "large") w.addSpacer()
+
   return w
+}
+
+// Per-family sizing: fonts, padding, and the custom-layout canvas size (points).
+const SIZING = {
+  small:  { pad: 16, title: 11, big: 34, sub: 13, meta: 10, canvas: new Size(170, 170) },
+  medium: { pad: 16, title: 12, big: 38, sub: 14, meta: 11, canvas: new Size(360, 170) },
+  large:  { pad: 24, title: 15, big: 64, sub: 22, meta: 14, canvas: new Size(360, 360) }
 }
 
 // Custom layout snapshot: draw gradient + free-positioned text with DrawContext.
@@ -277,15 +287,19 @@ function renderCustomImage(event, lines, colors, size) {
     ctx.fillRect(new Rect(0, i * sliceH, size.width, sliceH + 1))
   }
 
+  // Scale fonts with the canvas so custom layouts look proportional at any size
+  // (baseline tuned for the 170pt small canvas).
+  const scale = Math.min(size.width, size.height) / 170
+
   const accentHex = event.accent || "#ffffff"
-  drawPiece(ctx, event.title.toUpperCase(), event.custom.title, size, "#ffffffcc")
-  drawPiece(ctx, lines.primary, event.custom.value, size, accentHex, true)
-  if (lines.sub) drawPiece(ctx, lines.sub, event.custom.sub, size, accentHex)
+  drawPiece(ctx, event.title.toUpperCase(), event.custom.title, size, "#ffffffcc", false, scale)
+  drawPiece(ctx, lines.primary, event.custom.value, size, accentHex, true, scale)
+  if (lines.sub) drawPiece(ctx, lines.sub, event.custom.sub, size, accentHex, false, scale)
 
   return ctx.getImage()
 }
-function drawPiece(ctx, text, pos, size, hex, bold) {
-  const fontSize = pos.size || 16
+function drawPiece(ctx, text, pos, size, hex, bold, scale) {
+  const fontSize = (pos.size || 16) * (scale || 1)
   ctx.setFont(bold ? Font.boldSystemFont(fontSize) : Font.mediumSystemFont(fontSize))
   ctx.setTextColor(new Color(hex.length > 7 ? hex.substring(0, 7) : hex, hex.length > 7 ? parseInt(hex.substring(7), 16) / 255 : 1))
   const x = pos.x * size.width
