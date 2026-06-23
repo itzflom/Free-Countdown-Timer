@@ -354,17 +354,6 @@ async function runApp() {
 }
 
 // ----------------------------------------------------------------------------
-// Entry point
-// ----------------------------------------------------------------------------
-if (config.runsInWidget) {
-  Script.setWidget(buildWidget(findEvent(args.widgetParameter), config.widgetFamily || "small"))
-  Script.complete()
-} else {
-  await runApp()
-  Script.complete()
-}
-
-// ----------------------------------------------------------------------------
 // The web app (HTML + CSS + JS). Animated, live, drag-to-customize.
 // ----------------------------------------------------------------------------
 const APP_HTML = String.raw`<!DOCTYPE html>
@@ -641,3 +630,15 @@ renderList();
 </script>
 </body>
 </html>`
+
+// ----------------------------------------------------------------------------
+// Entry point (kept at the very bottom so every const above is initialized
+// before it runs — Scriptable executes the file top to bottom).
+// ----------------------------------------------------------------------------
+if (config.runsInWidget) {
+  Script.setWidget(buildWidget(findEvent(args.widgetParameter), config.widgetFamily || "small"))
+  Script.complete()
+} else {
+  await runApp()
+  Script.complete()
+}
